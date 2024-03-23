@@ -1,26 +1,64 @@
-TARGET = main
-CC = arm-none-eabi-gcc
-LD = arm-none-eabi-ld
-OBJCOPY = arm-none-eabi-objcopy
+CROSS_COMPILE =arm-none-eabi-
+CC		= $(CROSS_COMPILE)gcc
+LD		= $(CROSS_COMPILE)ld
+AR		= $(CROSS_COMPILE)ar
+AS		= $(CROSS_COMPILE)as
+OC		= $(CROSS_COMPILE)objcopy
+OD		= $(CROSS_COMPILE)objdump
+SZ		= $(CROSS_COMPILE)size
 
-CFLAGS = -mcpu=cortex-m3 -mthumb -Wall -g -nostartfiles -std=c99
+TARGET= main
+SRCS= ./main.c ./startup.c
+OBJS=$(SRCS:.c=.o)
+CFLAGS	= 	-c -fno-common \
+			-ffunction-sections \
+			-fdata-sections \
+			-Os \
+			-g3 \
+			-mcpu=cortex-m3 \
+			-mthumb \
+			-Wall
 
-all: $(TARGET).bin
+LDSCRIPT= stm32f103.ld
+
+LDFLAGS	=	--gc-sections,-T$(LDSCRIPT),-no-startup,-nostdlib
+
+OCFLAGS	=	-Obinary
+
+ODFLAGS	=	-S
+
+
+.PHONY : clean all
+
+
+all: $(TARGET).bin  $(TARGET).list
+	@echo "  SIZE $(TARGET).elf"
+	$(SZ) $(TARGET).elf
+
+$(TARGET).list: $(TARGET).elf
+	@echo "  OBJDUMP $(TARGET).list"
+	$(OD) $(ODFLAGS) $< > $(TARGET).lst
+
+
 
 $(TARGET).bin: $(TARGET).elf
-    $(OBJCOPY) -O binary $< $@
+	@echo "  OBJCOPY $(TARGET).bin"
+	$(OC) $(OCFLAGS) $(TARGET).elf $(TARGET).bin
 
-$(TARGET).elf: startup.o main.o stm32f103.ld
-    $(LD) -T stm32f103.ld -o $@ $^
 
-startup.o: startup.c
-    $(CC) $(CFLAGS) -c $< -o $@
+main.elf: main.o startup.o
+	$(CC) -mcpu=cortex-m3 -mthumb -Wl,$(LDFLAGS),-o$(TARGET).elf,-Map,$(TARGET).map $(OBJS)
 
-main.o: main.c stm32f103x_registers.h
-    $(CC) $(CFLAGS) -c $< -o $@
 
-flash: $(TARGET).bin
-    # Flash the binary to your STM32 device using your preferred tool
+%.o: %.c
+	@echo "  CC $<"
+	$(CC) $(CFLAGS)  $< -o $*.o
 
 clean:
-    rm -f *.o *.elf *.bin
+	@echo "Removing files..."
+	-find . -name '*.o'   | xargs rm
+	-find . -name '*.elf' | xargs rm
+	-find . -name '*.lst' | xargs rm
+	-find . -name '*.out' | xargs rm
+	-find . -name '*.bin' | xargs rm
+	-find . -name '*.map' | xargs rm
