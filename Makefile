@@ -7,6 +7,8 @@ OC		= $(CROSS_COMPILE)objcopy
 OD		= $(CROSS_COMPILE)objdump
 SZ		= $(CROSS_COMPILE)size
 
+# just a test comment
+
 TARGET= main
 SRCS= ./main.c ./startup.c
 OBJS=$(SRCS:.c=.o)
