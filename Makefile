@@ -8,6 +8,7 @@ OD		= $(CROSS_COMPILE)objdump
 SZ		= $(CROSS_COMPILE)size
 
 # just a test comment
+# another comment
 
 TARGET= main
 SRCS= ./main.c ./startup.c
